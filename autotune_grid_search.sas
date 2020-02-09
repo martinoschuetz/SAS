@@ -1,5 +1,5 @@
 /*
- * ToDo: 
+ * ToDo:
  * Macro pro Verfahren
  * Extra Loop für Median über Läufe.
  * Einheitliche Cross-Validation?
