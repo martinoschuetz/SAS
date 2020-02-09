@@ -1,0 +1,1 @@
+pro setinit; run;
