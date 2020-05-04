@@ -1,0 +1,4 @@
+
+Functionality: Run the Forecasting with Automatic Custom Interval Identification
+ 
+scenario 1: One Easter series with no dcc, use default settings and debug=1

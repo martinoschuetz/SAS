@@ -1,0 +1,171 @@
+%MACRO PARALLEL_LASR_LOAD(SOURCELIB,DSN,LIB,VALIDATION_CONDITION=1=1,ERROR=ERROR);
+	/*Step 1: Create Temporary Table ID*/
+	%LET EXECUTE=0;
+
+	%DO %WHILE (&EXECUTE=0);
+
+		/*Step 1a: Assign Randomly Generated Temporary Table ID*/
+		%LET TEMPLOAD=%SYSFUNC(CATS(_,%SYSFUNC(PUTN(%SYSFUNC(ROUND(%SYSEVALF(%SYSFUNC(RANUNI(0))*10000),1)),Z4.))));
+		%PUT TEMP Table Name Assigned as &TEMPLOAD;
+
+		/*Step 1b: Check if Temp Table exists in LASR*/
+		%PUT Checking that &TEMPLOAD is available in Library &LIB;
+
+		%IF %SYSFUNC(EXIST(&LIB..&TEMPLOAD.)) %THEN
+			%DO;
+				%LET  EXECUTE = 0;
+				%PUT &TEMPLOAD is not available. Trying again.;
+			%END;
+		%ELSE
+			%DO;
+				%LET  EXECUTE = 1;
+				%PUT &TEMPLOAD is available. Executing;
+			%END;
+	%END;
+
+	/*Step 2: Create Staging Table in SAS Work Directory;*/
+	PROC SQL;
+		CREATE TABLE WORK.&DSN AS 
+			SELECT * 
+				FROM &SOURCELIB..&DSN;
+	QUIT;
+
+	/*Step 3: Check that table was successfully created before continuing. If table is not present, abort.*/
+	%IF %SYSFUNC(EXIST(WORK.&DSN)) %THEN
+		%PUT &DSN has been created in Work Directory. Continuing;
+	%ELSE
+		%DO;
+			%LET EXECUTE = 0;
+			%PUT ERROR: &DSN has not been created in Work Directory. An issue occured extracting data from Source Library &SOURCELIB..;
+			%PUT ERROR: Aborting;
+
+			%ABORT;
+		%END;
+
+	/*Step 4: Check that target table in LASR exists before continuing. If table is not present, create it, and skip to end. */
+	%IF %SYSFUNC(EXIST(&LIB..&DSN)) %THEN
+		%PUT Target table &LIB..&DSN. exists. Continuing;
+	%ELSE
+		%DO;
+			%LET EXECUTE = 0;
+			%PUT Target table &LIB..&DSN does not exist. Loading from WORK.&DSN.;
+
+			PROC SQL;
+				CREATE TABLE &LIB..&DSN AS 
+					SELECT * 
+						FROM WORK.&DSN;
+			QUIT;
+
+			%IF %SYSFUNC(EXIST(&LIB..&DSN)) %THEN
+				%GOTO EXIT;
+			%ELSE
+				%DO;
+					%PUT ERROR: &DSN has not been created in &LIB. An issue occured loading the data to LASR.;
+					%PUT ERROR: Aborting;
+
+					%RETURN;
+				%END;
+		%END;
+
+	/*Step 5: Load Staging Table from SAS Work Directory to LASR Temporay Table;*/
+	PROC SQL;
+		CREATE TABLE &LIB..&TEMPLOAD AS 
+			SELECT * 
+				FROM WORK.&DSN;
+	QUIT;
+
+	/*Step 6: Check that table was successfully created before continuing. If table is not present, abort.*/
+	%IF %SYSFUNC(EXIST(&LIB..&TEMPLOAD)) %THEN
+		%PUT &DSN has been created in &LIB LASR Server. Continuing;
+	%ELSE
+		%DO;
+			%LET EXECUTE = 0;
+			%PUT ERROR: &DSN has not been created as &TEMPLOAD in LASR Directory. An issue occured loading the data from Work to LASR Library &LIB..;
+			%PUT ERROR: Aborting;
+
+			%RETURN;
+		%END;
+
+	/*Step 7: Check that the table has relevant data before continuing. If data is not present, abort.*/
+	DATA _NULL_;
+		SET &LIB..&TEMPLOAD (OBS=1);
+		WHERE &VALIDATION_CONDITION;
+
+		IF _N_ = 1 THEN
+			CALL SYMPUTX("EXECUTE",1);
+	RUN;
+
+	%IF &EXECUTE=1 %THEN
+		%DO;
+			%PUT &DSN contains valid data for Validation Condition.;
+			%PUT &=VALIDATION_CONDITION..;
+			%PUT Continuing.;
+		%END;
+	%ELSE
+		%DO;
+			%PUT ERROR: &DSN contains invalid data for Validation Condition.;
+			%PUT &=VALIDATION_CONDITION..;
+
+			%IF "&ERROR"="ERROR" %THEN
+				%DO;
+					%PUT ERROR: Aborting macro execution for &DSN.;
+
+					/*		%PUT NOTE: Sending Alert Email;*/
+				%END;
+			%ELSE %PUT Warning: Aborting macro execution for &DSN.;
+			%RETURN;
+		%END;
+
+	/*Step 8: Replace data in-memory from live LASR Table*/
+
+		PROC IMSTAT DATA=&LIB..&TEMPLOAD;
+			PARTITION;
+		RUN;
+
+		DROPTABLE &LIB..&DSN;
+		RUN;
+
+		TABLE &LIB..&_TEMPLAST_;
+		PROMOTE &DSN;
+		RUN;;
+
+		TABLE &LIB..&TEMPLOAD;
+		DROPTABLE &LIB..&TEMPLOAD;
+		RUN;
+
+		QUIT;
+
+%EXIT:
+	%PUT &LIB..&DSN Successfully Updated.;
+
+	PROC SQL NOPRINT;
+		SELECT PUT(COUNT(1),8.) INTO: WORK_RESULT FROM WORK.&DSN;
+		SELECT PUT(COUNT(1),8.) INTO: LASR_RESULT FROM &LIB..&DSN;
+	QUIT;
+
+	%PUT Temporary Table WORK.&DSN contains %SYSFUNC(STRIP(&WORK_RESULT.)) records.;
+	%PUT LASR Table &LIB..&DSN contains %SYSFUNC(STRIP(&LASR_RESULT.)) records.;
+
+	%IF %SYSFUNC(STRIP(&WORK_RESULT.)) NE %SYSFUNC(STRIP(&LASR_RESULT.)) %THEN
+		%PUT ERROR: Incorrect number of records loaded. Please contact your System Administrator;
+
+	/*Step 9: Clean up temporary tables*/
+	%IF %SYSFUNC(EXIST(&LIB..&TEMPLOAD)) %THEN
+		%DO;
+
+			PROC SQL;
+				DROP TABLE &LIB..&TEMPLOAD;
+			QUIT;
+
+		%END;
+
+	%IF %SYSFUNC(EXIST(WORK.&DSN)) %THEN
+		%DO;
+
+			PROC SQL NOPRINT;
+				DROP TABLE WORK.&DSN;
+			QUIT;
+
+		%END;
+%MEND;
+

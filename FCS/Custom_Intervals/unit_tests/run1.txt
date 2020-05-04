@@ -1,0 +1,2 @@
+TEST=custom_interval/run1
+EMAIL=yue.li@sas.com
