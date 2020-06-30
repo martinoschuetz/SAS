@@ -13,7 +13,7 @@ run;
 /* Don't use prefix with characters which are non conformant with SAS column naming conventions. */
 %macro column_prefix(lib=, dsin=, prefix=);
 
-	proc contents data=&dsin. out=_out_ noprint;
+	proc contents data=&lib..&dsin. out=_out_ noprint;
 	run;
 
 	proc sql noprint;
