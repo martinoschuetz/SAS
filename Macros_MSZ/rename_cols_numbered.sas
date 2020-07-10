@@ -44,9 +44,10 @@ Blocks Minimum = 1, opimal sum(length(Varname))/32000;
 		delete tmp_: contents;
 	run;
 %mend rename_cols_numbered;
-
+/*
 data class;
 	set sashelp.class;
 run;
 
 %rename_cols_numbered(dsin=class, dsout=class_out, blocks=2);
+*/
