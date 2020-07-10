@@ -84,4 +84,4 @@ data class;
 	set sashelp.class;
 run;
 
-%rename(dsin=class, dsout=class_out, blocks=2);
+%rename_cols_numbered(dsin=class, dsout=class_out, blocks=2);
