@@ -5,80 +5,45 @@ Blocks Minimum = 1, opimal sum(length(Varname))/32000;
 */
 %macro rename_cols_numbered(dsin=, dsout=, blocks=);
 
-	proc contents data=&dsin. out=contents;
-	run;
+	proc contents data=&dsin. out=contents noprint;	run;
 
 	%do j=0 %to &blocks.-1;
 
-		proc sql;
+		proc sql noprint;
 			select name into : vars separated by ' ' from contents(where=(mod(varnum, &Blocks.) eq &j.)) order by varnum;
 			select varnum into : varnums separated by ' ' from contents(where=(mod(varnum, &Blocks.) eq &j.)) order by varnum;
 			select ifc(Type eq 1, 'N', 'C') into : Types separated by ' ' from contents(where=(mod(varnum, &Blocks.) eq &j.)) order by varnum;
 		quit;
-
 		%let N=&sqlobs.;
-
-		/* Vor later control of the keep statement */
-		%let nominal=0;
-		%let numeric=0;
 
 		data tmp_&j.;
 			set &dsin.;
 
 			%do i=1 %to &n.;
 				%let typ = %scan(&Types., &i., ' ');
-
-				%if (&typ. eq C) %then
-					%do;
-						%let nominal = 1;
-					%end;
-
-				%if (&typ. eq N) %then
-					%do;
-						%let numeric = 1;
-					%end;
-
 				%let num = %scan(&varnums., &i., ' ');
-				%let varorig = "%scan(&vars., &i., ' ')"n;
-				%put &=varorig;
 				&typ._&num.="%scan(&vars., &i., ' ')"n;
 				label &typ._&num.="&typ._&num.: %scan(&vars., &i., ' ')";
 			%end;
 		run;
 
-		%let keep_string=;
-
-		%if &nominal. eq 1 %then
-			%do;
-				%let keep_string=&keep_string %str(C_:);
-			%end;
-
-		%if &numeric. eq 1 %then
-			%do;
-				%let keep_string=&keep_string %str(N_:);
-			%end;
-
+		/* Keep might not work if one tight is not in the data. Suppress the error.*/
+		options dkricond=nowarn;
 		data tmp_&j.;
-			set tmp_&j.(keep=&keep_string.);
+			set tmp_&j.(keep=C_: N_:);
 		run;
-
+		options dkricond=warn;
+	
 	%end;
 
 	data &dsout.;
 		merge tmp_:;
 	run;
 
-	%do j=0 %to &blocks.-1;
-
-		proc delete data=tmp_&j.;
-		run;
-
-	%end;
-
-	options notes;
+	proc datasets lib=work nodetails nolist nowarn;
+		delete tmp_: contents;
+	run;
 %mend rename_cols_numbered;
-
-options mprint mlogic;
 
 data class;
 	set sashelp.class;
