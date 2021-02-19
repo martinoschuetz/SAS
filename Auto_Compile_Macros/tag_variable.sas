@@ -1,6 +1,6 @@
-%macro tag_variable(ds=, var=);
+%macro tag_variable(dsin=, dsout=, var=);
 
-	proc summary data=&ds.;
+	proc summary data=&dsin.;
 		var &var.;
 		output out=work.&var._stats p1= p5= p95= p99= / autoname;
 	run;
@@ -13,8 +13,8 @@
 		call symput("&var._P99",&var._p99);
 	run;
 
-	data &ds._tagged;
-		set &ds.;
+	data &dsout.;
+		set &dsin.;
 		&var._P1  = ifn(&var. < &&&var._P1, 1, 0);
 		&var._P5  = ifn(&var. < &&&var._P5, 1, 0);
 		&var._P95 = ifn(&var. > &&&var._P95, 1, 0);
@@ -25,5 +25,5 @@
 
 %mend tag_variable;
 /*
-%tag_variable(ds=data.env3, var=env_3);
+%tag_variable(dsin=data.env3, dsout=data.env3_tagged, var=env_3);
 */

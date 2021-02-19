@@ -1,12 +1,15 @@
 options fullstimer;
-/* Create Time Series Cluster */
 
+/* Create Time Series Cluster */
 data tmp;
- set sashelp.snacks;
- retain Series 0;
- if first.product then series+1;
- by product;
+	set sashelp.snacks;
+	retain Series 0;
+
+	if first.product then
+		series+1;
+	by product;
 run;
+
 proc sort data=tmp out=tmp2;
  by date;
 run;
