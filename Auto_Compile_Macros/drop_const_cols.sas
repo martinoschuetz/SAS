@@ -88,6 +88,8 @@ options mprint mlogic;
 						%end;
 				%end;
 		%end;
+		
+	ods exclude none;
 
 %mend drop_const_cols;
 
