@@ -8,9 +8,6 @@ Add virtual NIC IP address to Linux `/etc/hosts`
 # sudo vi /etc/hosts
 192.168.100.199  dach-viya4-k8s
 ```
-
-
-
 ## System Update
 
 ```shell
@@ -29,21 +26,23 @@ sudo systemctl enable --now atd.service
 sudo apt update -y
 ```
 
-
-
 ### Disable SELinux
 
 ```shell
 # Set SELinux in permissive mode (effectively disabling it)
-sudo setenforce 0
-sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+#sudo setenforce 0
+#sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/ config
 ```
-
-
 
 ## Add Docker (19.03)
 
 ```shell
+
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+
+
+
+
 sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
 sudo yum install -y \
