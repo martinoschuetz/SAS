@@ -1,5 +1,3 @@
-[TOC]
-
 # Machine Preparation
 
 Add virtual NIC IP address to Linux `/etc/hosts`
@@ -55,20 +53,15 @@ echo \
   "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-sudo apt-get update
+ sudo apt-get update
+ sudo apt-get install docker-ce docker-ce-cli containerd.io
 
-
-
-
-
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
-sudo yum install -y \
-  containerd.io-1.2.13 \
-  docker-ce-19.03.11 \
-  docker-ce-cli-19.03.11
+sudo docker run hello
+sudo docker system prune -f
+sudo docker image rm
 
 sudo groupadd -f docker
+# Replace centos with your user name
 sudo usermod -aG docker centos
 
 sudo systemctl enable docker
