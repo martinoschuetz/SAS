@@ -1,4 +1,25 @@
+[TOC]
+
 # Machine Preparation
+
+On AWS, choose a CentOS based VM, r5.4xlarge, 150 GB Disk
+
+Tags:
+
+```
+# resourceowner: gerhje
+# id:            cc=38755:::dept=ade:::div=eapsl:::proj=:::cust=
+# stoptime:      30 20 * * 5 Europe/Berlin
+```
+
+Use the subnet ending with "...e9e".
+
+Make sure to add the private IP to Windows local `hosts` file:
+
+```shell
+# Viya4 SMP single node cluster
+10.249.5.19  dach-viya4-k8s
+```
 
 Add virtual NIC IP address to Linux `/etc/hosts`
 
@@ -6,62 +27,147 @@ Add virtual NIC IP address to Linux `/etc/hosts`
 # sudo vi /etc/hosts
 192.168.100.199  dach-viya4-k8s
 ```
+
+
+
+## Launch instance using Powershell
+
+```powershell
+C:\Tools\getawskey\getawskey.exe  -duration 43200
+aws ec2 run-instances `
+    --image-id ami-0766c896190544be7 `
+    --count 1 --instance-type m4.large `
+    --key-name AWS_FEDERATED_ACCOUNT_GERHJE_KEY `
+    --security-group-ids sg-71ba5516 `
+    --subnet-id subnet-b5ab3e9e `
+    --profile 738386057074-eapsl `
+    --placement AvailabilityZone=us-east-1a `
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=id,Value=cc=38755:::dept=ade:::div=eapsl:::proj=:::cust=}]'
+```
+
+### Powershell script
+
+```powershell
+# Set-PSDebug -Trace 1
+
+# -----------------------------------------------------------------------------
+# C:\Tools\getawskey\getawskey.exe  -duration 43200
+
+# -----------------------------------------------------------------------------
+New-Variable -Name "AWS_VIYA4AMI" -Value "ami-0c18489a5534eea52"    # v2
+New-Variable -Name "AWS_INSTANCE" -Value "m4.large"
+New-Variable -Name "AWS_PROFILE"  -Value "738386057074-eapsl"
+New-Variable -Name "AWS_SUBNET"   -Value "subnet-b5ab3e9e"
+New-Variable -Name "AWS_SECGRP"   -Value "sg-71ba5516"
+New-Variable -Name "AWS_TAG_ID"   -Value "cc=38755:::dept=ade:::div=eapsl:::proj=:::cust="
+
+# -----------------------------------------------------------------------------
+$RESPONSE=$(aws ec2 run-instances `
+    --image-id $AWS_VIYA4AMI `
+    --count 1 --instance-type $AWS_INSTANCE `
+    --key-name AWS_FEDERATED_ACCOUNT_GERHJE_KEY `
+    --security-group-ids $AWS_SECGRP `
+    --subnet-id $AWS_SUBNET `
+    --profile $AWS_PROFILE `
+    --placement AvailabilityZone=us-east-1a `
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=id,Value=$AWS_TAG_ID}]' | ConvertFrom-Json).Instances
+
+Write-Output ""
+Write-Output "---------------------------------------------------------"
+Write-Output "AWS instance started. Update IP address to: " ($RESPONSE.PrivateIpAddress)
+Write-Output ""
+```
+
+
+
+## SSH Keys
+
+```shell
+cat <<EOF > ~/.ssh/id_rsa
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpgIBAAKCAQEA07ZR6ht7hU6KceDmJROOS3rGikgX4Ge0VCnbjG5jtw2ud1dg
+bjCBv/y+0fp0R+p/q8MYkl8cdzES6pUxrhAOMF6n7fE9qMFS2Wf17BYBf5xJNq/o
+Jo7Yw63ZkiMcFfJhpCEnJwLV7E65zmlK4c3+W45UOt9HzKqI6EsHp54Zn9Sr4Y8F
+FNBOzUps3m2uwGZVWwv66J8ouQ3rsiF0JJa54tOvFztkrIvrq00cFtUelsFTVmSz
+Qup8pKM/HxXi1z6F+2pwyM238wiuCNDvaO5YKg4f176y+dh8QgLLWI/2O0rhLbOD
+IiMhoR2o85TuuX1WOXc7wD21J0FxFiHmUvHqZQIDAQABAoIBAQC8ukyveyxTm75C
+4g+HgbVZh+sxHi9atlfEp0O2Hjn51tJuRJAL6mXf9blNigzahyqkvVhMM0k236JT
+SAhveJSNffQJYwJqS1xFvi019jADyBhkDc/Pf4uwdGv9oBrLXbS5EWzLk/WLoGp2
+nNpKDM3wZCKmEKD6zBMbsLb0LzX8iYQjOfeGRmmbKPoK++xfg9MaxevngF4dc9hJ
+zRRshE7BC0rYgCih+gZTsuDk6JX+a2M6et0oNIki+Nn6buqIxfvYFACktnbVftBz
+7ABd5N9IRPMlAA2z9YJFMyuD2WWMNJCVACXWdguRuzcHSvOF5TZdwm+Vgp4lbcKa
+2Tx5u1aJAoGBAPAguftNkVY20MS8CDbiQd0aV5ezghwP4RGOn2j+9OmGg2QI9kve
+sA7kD3gauXeWZ/AanCaOAJEpCef25htwAZShs0+YzGufW1+w4IdS8A/J3sO+3viR
+1I2/1YXjYiRIHvXklJXzHxiHAUYhkVO3fVtv0bGopWJvKAaS6nnAW4rLAoGBAOG0
+w5GQW8K+p6BjJwLkBamFNPni6pkKX/s7gY+AAFx4fTeOoRO2Ng7vUjuiiQeXgGNf
+1B6Vp5Al/niGI8Au6SPxl9J1f1CshHMGkKSeOvDUMw+HIpWSaM+fJwl//VLijgtN
+QQ7TRs6WQXifXjhHlxfTpIRVppeVxZTJXOI2wsmPAoGBAOfX8Tl9zxFao38PvS6g
+jc8Ym/HQU5MckcYN2kPZxkWipkFzlbnzLDF0aKshwmiAQ6JDTvi6qjl9Uh8w90MO
+hbgn16TGdriCiAqAEIkXvsi/s+Fy7H067+pciaBXxm4ZZCsto3iT4DYiQ0yfJF2c
+D+C0udW6atP7Vr3iI5mh68C5AoGBAMRyQbmjTMp+iIVnZ1/zuR3ny8knAIs9ZXbU
+Pxr4DNhvIoVFhdsTP4/WKtuuxtetvFhB4uzP0qz69LZQAjPWYKMhNsQ98hb0YL+A
+2kn9Uk2kU+DS/H30lXcIDcEN/h2zBHC/x70wlLNgQhHLnAUeAlsBoXJw3fOXrwWm
+EUru4LDvAoGBALfIEUvdEj0sjxsHFdcGEQFWf/4dLzn+cwA0LsaGMDaSmkSReRo3
+IW68FjL5pfzDm33e6Ho2K0dNBniens5zbWAky/zt33wlbUf/rz6wQg5DmDaBELDS
+nzcaT9qmYEGVSjNhbnZiAGiUPI8GzFlenKfi/GnRFQVkhHwDKNT+saDa
+-----END RSA PRIVATE KEY-----
+EOF
+
+cat <<EOF > ~/.ssh/id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDTtlHqG3uFTopx4OYlE45LesaKSBfgZ7RUKduMbmO3Da53V2BuMIG//L7R+nRH6n+rwxiSXxx3MRLqlTGuEA4wXqft8T2owVLZZ/XsFgF/nEk2r+gmjtjDrdmSIxwV8mGkIScnAtXsTrnOaUrhzf5bjlQ630fMqojoSwennhmf1KvhjwUU0E7NSmzeba7AZlVbC/ronyi5DeuyIXQklrni068XO2Ssi+urTRwW1R6WwVNWZLNC6nykoz8fFeLXPoX7anDIzbfzCK4I0O9o7lgqDh/XvrL52HxCAstYj/Y7SuEts4MiIyGhHajzlO65fVY5dzvAPbUnQXEWIeZS8epl ROOT_AWS_VIYATOGO_KEY
+EOF
+
+cat <<EOF > ~/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDTtlHqG3uFTopx4OYlE45LesaKSBfgZ7RUKduMbmO3Da53V2BuMIG//L7R+nRH6n+rwxiSXxx3MRLqlTGuEA4wXqft8T2owVLZZ/XsFgF/nEk2r+gmjtjDrdmSIxwV8mGkIScnAtXsTrnOaUrhzf5bjlQ630fMqojoSwennhmf1KvhjwUU0E7NSmzeba7AZlVbC/ronyi5DeuyIXQklrni068XO2Ssi+urTRwW1R6WwVNWZLNC6nykoz8fFeLXPoX7anDIzbfzCK4I0O9o7lgqDh/XvrL52HxCAstYj/Y7SuEts4MiIyGhHajzlO65fVY5dzvAPbUnQXEWIeZS8epl ROOT_AWS_VIYATOGO_KEY
+EOF
+
+chmod 600 ~/.ssh/authorized_keys ~/.ssh/id_rsa
+```
+
+
+
 ## System Update
 
 ```shell
 sudo hostnamectl --static set-hostname dach-viya4-k8s
 sudo hostnamectl --transient set-hostname dach-viya4-k8s
 
+vi /etc/cloud/cloud.cfg
+# preserve_hostname: true
+
 timedatectl set-timezone UTC
 
-#sudo yum install epel-release -y
-sudo apt update
-sudo apt upgrade
-sudo apt install -y mlocate vim ufw wget git socat htop jq nfs-kernel-server conntrack zip unzip htop tmux mailutils at
+sudo yum install epel-release -y
+sudo yum install -y mlocate vim ufw wget git socat htop jq nfs-utils conntrack zip unzip htop tmux mailx at
 sudo updatedb
 sudo systemctl enable --now atd.service
 
-sudo apt update
+sudo yum update -y
 ```
+
+
 
 ### Disable SELinux
 
 ```shell
 # Set SELinux in permissive mode (effectively disabling it)
-#sudo setenforce 0
-#sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/ config
+sudo setenforce 0
+sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 ```
+
+
 
 ## Add Docker (19.03)
 
 ```shell
-# https://docs.docker.com/engine/install/ubuntu/
-# 
-sudo apt-get remove docker docker-engine docker.io containerd runc
-sudo apt-get update
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
-sudo apt-get install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
-
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg 
-
-echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
- sudo apt-get update
- sudo apt-get install docker-ce docker-ce-cli containerd.io
-
-sudo docker run hello
-sudo docker system prune -f
-sudo docker image rm
+sudo yum install -y \
+  containerd.io-1.2.13 \
+  docker-ce-19.03.11 \
+  docker-ce-cli-19.03.11
 
 sudo groupadd -f docker
-# Replace centos with your user name
 sudo usermod -aG docker centos
 
 sudo systemctl enable docker
