@@ -2,6 +2,29 @@
 
 # Machine Preparation
 
+## Special preparation for Dual Boot
+
+
+FIRST Install Windows 10 from an USB Stick (https://www.microsoft.com/de-de/software-download/windows10%20)
+
+Install CentOS Stream from an USB Stick (https://linuxhint.com/install_centos8_stream/)
+
+After Reboot the Grub2 boot manager ist not showing a Windows 10 entry
+
+sudo su -
+cat <<EOF > /etc/grub.d/40_custom
+menuentry "Windows 10" {
+set root=(hd0,1)
+chainloader +1
+}
+EOF
+
+grub2-mkconfig --output= /boot/grub2/grub.cfg
+
+reboot
+
+You should be able to select Windows 10 know.
+
 Make sure to add the private IP to Windows local `hosts` file:
 
 ```shell
