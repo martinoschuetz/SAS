@@ -34,6 +34,7 @@ Make sure to add the private IP to Windows local `hosts` file:
 ## System Update
 
 ```shell
+su
 sudo hostnamectl --static set-hostname dach-viya4-k8s
 sudo hostnamectl --transient set-hostname dach-viya4-k8s
 
@@ -99,12 +100,23 @@ sudo systemctl restart docker
 ## Set up virtual NIC to ensure stable IP address
 
 ```shell
-modprobe dummy
 
-ip link set name eth10 dev dummy0
-ip addr add 192.168.100.199/24 brd + dev eth10
 
-ifconfig eth10 up
+#To make this interface you'd first need to make sure that #you have the dummy kernel module loaded. You can do this #like so:
+
+sudo lsmod | grep dummy
+sudo modprobe dummy
+sudo lsmod | grep dummy
+
+#dummy                  12960  0 
+
+sudo ip link add dummy0 type dummy
+sudo ip link set name eth10 dev dummy0
+
+sudo ip addr add 192.168.100.199/24 brd + dev eth10
+
+
+sudo ifconfig eth10 up
 
 # check
 ifconfig eth10
@@ -140,17 +152,16 @@ chmod a+x /opt/vnic/mk_vnic.sh
 systemctl enable /opt/vnic/sas-vnic.service
 ```
 
-
-
 ## Set up NFS server
 
 ```shell
-sudo mkdir /nfsshare
-sudo chown nfsnobody: /nfsshare
 
 sudo yum install -y nfs-utils
 sudo systemctl enable nfs-server.service
 sudo systemctl start nfs-server.service
+
+sudo mkdir /nfsshare
+sudo chown nfsnobody: /nfsshare
 
 sudo vi /etc/exports
 cat /etc/exports
