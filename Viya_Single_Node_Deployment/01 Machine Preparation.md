@@ -161,34 +161,43 @@ sudo systemctl enable nfs-server.service
 sudo systemctl start nfs-server.service
 
 sudo mkdir /nfsshare
-sudo chown nfsnobody: /nfsshare
+sudo chown -R nobody: /nfsshare
+#sudo chown nfsnobody /nfsshare
+
+sudo systemctl restart nfs-utils.service
 
 sudo vi /etc/exports
 cat /etc/exports
-/nfsshare        *(rw,async,no_subtree_check,no_root_squash,nofail,nodiratime)
-sudo exportfs -ra
+/nfsshare        *(rw,async,no_subtree_check,no_root_squash)
+#/nfsshare        *(rw,async,no_subtree_check,no_root_squash,nofail,nodiratime)
+sudo exportfs -rav
+sudo exportfs -s
+
+sudo firewall-cmd --permanent --add-service=nfs
+sudo firewall-cmd --permanent --add-service=rpc-bind
+sudo firewall-cmd --permanent --add-service=mountd
+sudo firewall-cmd --reload
 
 sudo showmount -e dach-viya4-k8s
 ```
 
 ```shell
 # static network shares for user data
+# use your own user account instead of centos
 cd /nfsshare
 sudo mkdir sasdata
-sudo chown centos:centos sasdata
+sudo chown martin:martin sasdata
 sudo mkdir casdata
-sudo chown centos:centos casdata
+sudo chown martin:martin casdata
 sudo mkdir pythondata
-sudo chown centos:centos pythondata
+sudo chown martin:martin pythondata
 chmod 777 sasdata/ casdata/ pythondata/
+sudo vi /etc/fstab
+add the following line
+server.local:/srv/nfs   /media/username/nfs_share   nfs    user,noauto    0   0
 ```
 
-Use from Windows Explorer:
-
-```
-\\dach-viya4-k8s\nfsshare\sasdata
-```
-
+Open /nfsshare in Nautilus File Explorer 
 
 
 ## Set up local PostgreSQL database
@@ -197,7 +206,7 @@ Add repository, install database, init db, start & enable service. Make sure tha
 
 ```shell
 rpm -Uvh https://yum.postgresql.org/11/redhat/rhel-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-yum -y install postgresql11-server postgresql11 postgresql11-contrib
+sudo yum -y install postgresql11-server postgresql11 postgresql11-contrib
 
 /usr/pgsql-11/bin/postgresql-11-setup initdb
 systemctl start postgresql-11 && systemctl enable postgresql-11
