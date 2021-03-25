@@ -104,11 +104,7 @@ sudo systemctl restart docker
 
 #To make this interface you'd first need to make sure that #you have the dummy kernel module loaded. You can do this #like so:
 
-sudo lsmod | grep dummy
 sudo modprobe dummy
-sudo lsmod | grep dummy
-
-#dummy                  12960  0 
 
 sudo ip link add dummy0 type dummy
 sudo ip link set name eth10 dev dummy0
@@ -173,10 +169,10 @@ cat /etc/exports
 sudo exportfs -rav
 sudo exportfs -s
 
-sudo firewall-cmd --permanent --add-service=nfs
-sudo firewall-cmd --permanent --add-service=rpc-bind
-sudo firewall-cmd --permanent --add-service=mountd
-sudo firewall-cmd --reload
+#sudo firewall-cmd --permanent --add-service=nfs
+#sudo firewall-cmd --permanent --add-service=rpc-bind
+#sudo firewall-cmd --permanent --add-service=mountd
+#sudo firewall-cmd --reload
 
 sudo showmount -e dach-viya4-k8s
 ```
@@ -193,8 +189,8 @@ sudo mkdir pythondata
 sudo chown martin:martin pythondata
 chmod 777 sasdata/ casdata/ pythondata/
 sudo vi /etc/fstab
-add the following line
-server.local:/srv/nfs   /media/username/nfs_share   nfs    user,noauto    0   0
+#add the following line
+server.local:/srv/nfs   /nfsshare   nfs    user,noauto    0   0
 ```
 
 Open /nfsshare in Nautilus File Explorer 
@@ -205,11 +201,18 @@ Open /nfsshare in Nautilus File Explorer
 Add repository, install database, init db, start & enable service. Make sure that Postgres starts _after_ the virtual NIC service has started.
 
 ```shell
-rpm -Uvh https://yum.postgresql.org/11/redhat/rhel-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo yum -y install postgresql11-server postgresql11 postgresql11-contrib
+sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+rpm -qi pgdg-redhat-repo
 
-/usr/pgsql-11/bin/postgresql-11-setup initdb
-systemctl start postgresql-11 && systemctl enable postgresql-11
+sudo dnf module disable postgresql
+sudo dnf clean all
+
+sudo dnf -y install postgresql11-server postgresql11
+dnf info postgresql11-server postgresql11
+
+sudo /usr/pgsql-11/bin/postgresql-11-setup initdb
+sudo systemctl enable --now postgresql-11
+sudo systemctl status postgresql-11
 
 # make sure that the postgres service starts AFTER the virtual network service
 cat /usr/lib/systemd/system/postgresql-11.service
@@ -319,8 +322,8 @@ path = /nfsshare
     read only = no
     force create mode = 0777
     force directory mode = 2777
-	force user = centos
-	force group = centos
+	force user = martin
+	force group = martin
 EOF
 sudo systemctl restart smb.service
 sudo systemctl restart nmb.service
@@ -329,14 +332,16 @@ sudo systemctl restart nmb.service
 Add a samba user (Windows policy prohibits anonymous access)
 
 ```shell
+useradd viyademo01
 smbpasswd -a viyademo01
 # Password: lnxsas
 smbpasswd -e viyademo01
 ```
+Open Nautilus File Explorer and open smbshare using User viyademo01.
 
 Use this command from DOS
 
 ```powershell
-net use Z: \\dach-viya4-k8s\smbshare lnxsas /user:localhost\viyademo01
+#net use Z: \\dach-viya4-k8s\smbshare lnxsas /user:localhost\viyademo01
 ```
 
