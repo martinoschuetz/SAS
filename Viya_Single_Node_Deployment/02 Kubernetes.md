@@ -34,6 +34,7 @@ sudo yum install -y kubelet-1.18* kubeadm-1.18* kubectl-1.18* --disableexcludes=
 sudo systemctl enable --now kubelet
 
 #sudo kubeadm reset
+swapoff -a
 sudo kubeadm init --apiserver-advertise-address=192.168.100.199 --pod-network-cidr=10.244.0.0/16
 
 # increase number of pods
@@ -86,6 +87,16 @@ export KUBECONFIG=~/.kube/config
 cat $KUBECONFIG
 # copy & paste to Windows, then replace IP address in config with "dach-viya4-k8s"
 ```
+
+Install Lens on Linux
+```
+sudo yum install epel-release
+sudo yum install snapd
+sudo systemctl enable --now snapd.socket
+sudo ln -s /var/lib/snapd/snap /snap
+sudo snap install kontena-lens --classic
+´´´
+Add Cluster as normal user from ~/.kube/config and add metrics under Properties.
 
 ### Helm
 
