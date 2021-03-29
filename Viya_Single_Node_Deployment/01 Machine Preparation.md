@@ -25,28 +25,28 @@ reboot
 
 You should be able to select Windows 10 know.
 
-Make sure to add the private IP to Windows local `hosts` file:
-
+Add virtual NIC IP adress to Linux /etc/hosts
 ```shell
-# Viya4 SMP single node cluster
-10.249.5.19  dach-viya4-k8s
+su
+# vi /etc/hosts
+192.168.100.199  dach-viya4-k8s
 ```
 ## System Update
 
 ```shell
-su
-sudo hostnamectl --static set-hostname dach-viya4-k8s
-sudo hostnamectl --transient set-hostname dach-viya4-k8s
+hostnamectl --static set-hostname dach-viya4-k8s
+hostnamectl --transient set-hostname dach-viya4-k8s
 
+mkdir /etc/cloud
 vi /etc/cloud/cloud.cfg
 # preserve_hostname: true
 
 #timedatectl set-timezone UTC
 
-sudo yum install epel-release -y
-sudo yum install -y mlocate vim ufw wget git socat htop jq nfs-utils conntrack zip unzip htop tmux mailx at
-sudo updatedb
-sudo systemctl enable --now atd.service
+yum install epel-release -y
+yum install -y mlocate vim ufw wget git socat htop jq nfs-utils conntrack zip unzip htop tmux mailx at
+updatedb
+systemctl enable --now atd.service
 
 sudo yum update -y
 ```
@@ -65,21 +65,20 @@ sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 ## Add Docker (19.03)
 
 ```shell
-sudo yum install yum-utils
+yum install yum-utils
 
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
-sudo yum install -y --allowerasing containerd.io
+yum install -y --allowerasing containerd.io
 
-sudo yum install -y  docker-ce  docker-ce-cli
+yum install -y  docker-ce  docker-ce-cli
 
-sudo groupadd -f docker
-sudo usermod -aG docker centos
+groupadd -f docker
+usermod -aG docker martin
 
-sudo systemctl enable docker
-sudo systemctl start docker
+systemctl enable docker
+systemctl start docker
 
-sudo su -
 cat <<EOF > /etc/docker/daemon.json
 {
   "exec-opts": [ "native.cgroupdriver=systemd" ],
@@ -92,7 +91,7 @@ cat <<EOF > /etc/docker/daemon.json
 }
 EOF
 
-sudo systemctl restart docker
+systemctl restart docker
 ```
 
 
@@ -104,15 +103,15 @@ sudo systemctl restart docker
 
 #To make this interface you'd first need to make sure that #you have the dummy kernel module loaded. You can do this #like so:
 
-sudo modprobe dummy
+modprobe dummy
 
-sudo ip link add dummy0 type dummy
-sudo ip link set name eth10 dev dummy0
+ip link add dummy0 type dummy
+ip link set name eth10 dev dummy0
 
-sudo ip addr add 192.168.100.199/24 brd + dev eth10
+ip addr add 192.168.100.199/24 brd + dev eth10
 
 
-sudo ifconfig eth10 up
+ifconfig eth10 up
 
 # check
 ifconfig eth10
@@ -137,7 +136,7 @@ cat <<EOF > /opt/vnic/mk_vnic.sh
 #!/bin/sh
 # define virtual NIC and start it
 modprobe dummy
-
+ip link add dummy0 type dummy
 ip link set name eth10 dev dummy0
 ip addr add 192.168.100.199/24 brd + dev eth10
 
@@ -146,49 +145,54 @@ EOF
 
 chmod a+x /opt/vnic/mk_vnic.sh
 systemctl enable /opt/vnic/sas-vnic.service
+systemctl start /opt/vnic/sas-vnic.service
+systemctl status /opt/vnic/sas-vnic.service
 ```
 
 ## Set up NFS server
 
 ```shell
 
-sudo yum install -y nfs-utils
-sudo systemctl enable nfs-server.service
-sudo systemctl start nfs-server.service
+yum install -y nfs-utils
+systemctl enable nfs-server.service
+systemctl start nfs-server.service
 
-sudo mkdir /nfsshare
-sudo chown -R nobody: /nfsshare
+mkdir /nfsshare
+chown -R nobody: /nfsshare
 #sudo chown nfsnobody /nfsshare
 
-sudo systemctl restart nfs-utils.service
+systemctl restart nfs-utils.service
 
-sudo vi /etc/exports
+vi /etc/exports
 cat /etc/exports
 /nfsshare        *(rw,async,no_subtree_check,no_root_squash)
 #/nfsshare        *(rw,async,no_subtree_check,no_root_squash,nofail,nodiratime)
-sudo exportfs -rav
-sudo exportfs -s
+exportfs -rav
+exportfs -s
 
 #sudo firewall-cmd --permanent --add-service=nfs
 #sudo firewall-cmd --permanent --add-service=rpc-bind
 #sudo firewall-cmd --permanent --add-service=mountd
 #sudo firewall-cmd --reload
 
-sudo showmount -e dach-viya4-k8s
+showmount -e dach-viya4-k8s
+
+server.local:/srv/nfs   /nfsshare   nfs    user,noauto    0   0
+
 ```
 
 ```shell
 # static network shares for user data
 # use your own user account instead of centos
 cd /nfsshare
-sudo mkdir sasdata
-sudo chown martin:martin sasdata
-sudo mkdir casdata
-sudo chown martin:martin casdata
-sudo mkdir pythondata
-sudo chown martin:martin pythondata
+mkdir sasdata
+chown martin:martin sasdata
+mkdir casdata
+chown martin:martin casdata
+mkdir pythondata
+chown martin:martin pythondata
 chmod 777 sasdata/ casdata/ pythondata/
-sudo vi /etc/fstab
+vi /etc/fstab
 #add the following line
 server.local:/srv/nfs   /nfsshare   nfs    user,noauto    0   0
 ```
@@ -201,18 +205,18 @@ Open /nfsshare in Nautilus File Explorer
 Add repository, install database, init db, start & enable service. Make sure that Postgres starts _after_ the virtual NIC service has started.
 
 ```shell
-sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 rpm -qi pgdg-redhat-repo
 
-sudo dnf module disable postgresql
-sudo dnf clean all
+dnf module disable postgresql
+dnf clean all
 
-sudo dnf -y install postgresql11-server postgresql11
+dnf -y install postgresql11-server postgresql11
 dnf info postgresql11-server postgresql11
 
-sudo /usr/pgsql-11/bin/postgresql-11-setup initdb
-sudo systemctl enable --now postgresql-11
-sudo systemctl status postgresql-11
+/usr/pgsql-11/bin/postgresql-11-setup initdb
+systemctl enable --now postgresql-11
+systemctl status postgresql-11
 
 # make sure that the postgres service starts AFTER the virtual network service
 cat /usr/lib/systemd/system/postgresql-11.service
@@ -306,11 +310,11 @@ DROP DATABASE "SharedServices";
 NFS shares often do not map properly from Windows. Set up a Samba server to expose the same shares through the SMB protocol.
 
 ```shell
-sudo yum install samba samba-client -y
-sudo systemctl start smb.service
-sudo systemctl start nmb.service
-sudo systemctl enable smb.service
-sudo systemctl enable nmb.service
+yum install samba samba-client -y
+systemctl start smb.service
+systemctl start nmb.service
+systemctl enable smb.service
+systemctl enable nmb.service
 ```
 
 ```shell
@@ -336,6 +340,10 @@ useradd viyademo01
 smbpasswd -a viyademo01
 # Password: lnxsas
 smbpasswd -e viyademo01
+
+smbpasswd -a martin
+# Password: lnxsas
+smbpasswd -e martin
 ```
 Open Nautilus File Explorer and open smbshare using User viyademo01.
 
