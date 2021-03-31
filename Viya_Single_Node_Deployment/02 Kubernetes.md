@@ -7,7 +7,7 @@
 ## Kubernetes install
 
 ```shell
-sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+yum install -y yum-utils device-mapper-persistent-data lvm2
 
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -29,20 +29,41 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cl
 exclude=kubelet kubeadm kubectl
 EOF
 
-sudo yum install -y kubelet-1.18* kubeadm-1.18* kubectl-1.18* --disableexcludes=kubernetes
+sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+#sudo yum install -y kubelet-1.18* kubeadm-1.18* kubectl-1.18* --disableexcludes=kubernetes
 
 sudo systemctl enable --now kubelet
 
+
+systemctl stop firewalld
 #sudo kubeadm reset
+#firewall-cmd --zone public --list-all
+#firewall-cmd --get-active-zones
+
+#firewall-cmd --zone=public --add-port=6443/tcp --permanent --zone=docker
+#firewall-cmd --zone=public --add-port=10250/tcp --permanent --zone=docker
+#systemctl restart firewalld
+#sudo firewall-cmd --reload
+
+#https://www.tecmint.com/open-port-for-specific-ip-address-in-firewalld/
+#firewall-cmd --new-zone=kubectl_access --permanent
+ #firewall-cmd --reload
+ #firewall-cmd --get-zones
+ #firewall-cmd --zone=kubectl_access --add-source=192.168.100.199/24 --permanent
+ #firewall-cmd --zone=kubectl_access --add-port=6443/tcp --permanent
+ #firewall-cmd --zone=kubectl_access --add-port=10250/tcp --permanent
+ #firewall-cmd --reload
+ #kubectl get nodes
+
 swapoff -a
-sudo kubeadm init --apiserver-advertise-address=192.168.100.199 --pod-network-cidr=10.244.0.0/16
+kubeadm init --apiserver-advertise-address=192.168.100.199 --pod-network-cidr=10.244.0.0/16
 
 # increase number of pods
-sudo vi /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+vi /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
 # add: ExecStart=... --max-pods=201
 
-sudo systemctl daemon-reload
-sudo systemctl restart kubelet
+systemctl daemon-reload
+systemctl restart kubelet
 ```
 
 ### Set up KUBECONFIG
@@ -88,13 +109,13 @@ cat $KUBECONFIG
 # copy & paste to Windows, then replace IP address in config with "dach-viya4-k8s"
 ```
 
-Install Lens on Linux
+Install Lens on Linux from downloaded rpm
 ```
-sudo yum install epel-release
-sudo yum install snapd
-sudo systemctl enable --now snapd.socket
-sudo ln -s /var/lib/snapd/snap /snap
-sudo snap install kontena-lens --classic
+#sudo yum install epel-release
+#sudo yum install snapd
+#sudo systemctl enable --now snapd.socket
+#sudo ln -s /var/lib/snapd/snap /snap
+#sudo snap install kontena-lens --classic
 ´´´
 Add Cluster as normal user from ~/.kube/config and add metrics under Properties.
 
@@ -118,7 +139,7 @@ helm list
 curl -O -s -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.7.0/kustomize_v3.7.0_linux_amd64.tar.gz
 
 tar xvzf kustomize_*_linux_amd64.tar.gz
-sudo mv kustomize /usr/local/bin/
+mv kustomize /usr/local/bin/
 
 kustomize version
 
@@ -131,7 +152,7 @@ rm -f kustomize_*_linux_amd64.tar.gz
 wget https://github.com/derailed/k9s/releases/download/v0.24.2/k9s_Linux_x86_64.tar.gz
 tar xvzf k9s_Linux_x86_64.tar.gz
 
-sudo mv k9s /usr/local/bin/
+mv k9s /usr/local/bin/
 
 rm -f k9s_Linux_x86_64.tar.gz
 ```
