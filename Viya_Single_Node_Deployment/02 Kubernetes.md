@@ -53,6 +53,7 @@ systemctl stop firewalld
  #firewall-cmd --zone=kubectl_access --add-port=6443/tcp --permanent
  #firewall-cmd --zone=kubectl_access --add-port=10250/tcp --permanent
  #firewall-cmd --reload
+ #firewall-cmd --zone=mariadb-access --list-all 
  #kubectl get nodes
 
 swapoff -a
@@ -72,8 +73,8 @@ Set up KUBECONFIG. Repeat this for user "centos".
 
 ```shell
 mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
 echo "export KUBECONFIG=$HOME/.kube/config" >> $HOME/.bash_profile
@@ -84,8 +85,8 @@ echo "export KUBECONFIG=$HOME/.kube/config" >> $HOME/.bash_profile
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
-sudo systemctl restart kubelet
-sudo systemctl status kubelet
+systemctl restart kubelet
+systemctl status kubelet
 
 kubectl get nodes
 ```
@@ -96,8 +97,6 @@ kubectl get nodes
 kubectl taint nodes --all node-role.kubernetes.io/master-
 kubectl label nodes --all node-role.kubernetes.io/master-
 ```
-
-
 
 ## Tooling
 
@@ -462,9 +461,9 @@ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1
 Note: use modified deployment script (download openldap from Git repo)
 
 ```shell
-tar xvzf /home/centos/deploy-openldap.tgz
+tar xvzf /home/martin/deploy-openldap.tgz
 
-cd ~/deploy-openldap/
+cd ./deploy-openldap/
 
 # openldap repo has been deprecated, deploy from Git
 git clone https://github.com/helm/charts.git
