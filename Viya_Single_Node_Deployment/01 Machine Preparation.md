@@ -4,7 +4,6 @@
 
 ## Special preparation for Dual Boot
 
-
 FIRST Install Windows 10 from an USB Stick (https://www.microsoft.com/de-de/software-download/windows10%20)
 
 Install CentOS Stream from an USB Stick (https://linuxhint.com/install_centos8_stream/)
@@ -12,6 +11,7 @@ Install CentOS Stream from an USB Stick (https://linuxhint.com/install_centos8_s
 After Reboot the Grub2 boot manager ist not showing a Windows 10 entry
 
 sudo su -
+
 cat <<EOF > /etc/grub.d/40_custom
 menuentry "Windows 10" {
 set root=(hd0,1)
@@ -25,26 +25,27 @@ reboot
 
 You should be able to select Windows 10 know.
 
-Add virtual NIC IP adress to Linux /etc/hosts
-```shell
-su
-# vi /etc/hosts
-192.168.100.199  dach-viya4-k8s
-```
 ## Add Visual Studio Code as Editor for Coding and these scripts first
+
 ```yum install git
 rpm --import https://packages.microsoft.com/keys/microsoft.asc sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+
 dnf check-update
+
 dnf install code
 
-# exit to normal user
-git config --global user.name "Martin Schütz"
-git config --global user.email "martin@schuetzens.de"
 # Start Visual Studio 
 code
 # Mark code as a favorite
+
+# exit to normal user
+
+git config --global user.name "Martin Schütz"
+git config --global user.email "martin@schuetzens.de"
+
+#change back to super user
 su
-´´´
+```
 
 ## System Update
 
@@ -63,15 +64,15 @@ yum install -y mlocate vim ufw wget git socat htop jq nfs-utils conntrack zip un
 updatedb
 systemctl enable --now atd.service
 
-sudo yum update -y
+yum update -y
 ```
 
 ### Disable SELinux
 
 ```shell
 # Set SELinux in permissive mode (effectively disabling it)
-sudo setenforce 0
-sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+setenforce 0
+sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 ```
 
 ## Add Docker (19.03)
@@ -106,12 +107,17 @@ EOF
 systemctl restart docker
 ```
 
+
+
 ## Set up virtual NIC to ensure stable IP address
 
+### Add virtual NIC IP adress to Linux /etc/hosts
 ```shell
+# vi /etc/hosts
+192.168.100.199  dach-viya4-k8s
+```
 
-#To make this interface you'd first need to make sure that #you have the dummy kernel module loaded. You can do this #like so:
-
+```shell
 modprobe dummy
 ip link add dummy0 type dummy
 ip link set name eth10 dev dummy0
@@ -148,8 +154,8 @@ EOF
 
 chmod a+x /opt/vnic/mk_vnic.sh
 systemctl enable /opt/vnic/sas-vnic.service
-systemctl start /opt/vnic/sas-vnic.service
-systemctl status /opt/vnic/sas-vnic.service
+#systemctl start /opt/vnic/sas-vnic.service
+#systemctl status /opt/vnic/sas-vnic.service
 ```
 
 ## Set up NFS server
@@ -180,8 +186,6 @@ exportfs -s
 
 showmount -e dach-viya4-k8s
 
-server.local:/srv/nfs   /nfsshare   nfs    user,noauto    0   0
-
 ```
 
 ```shell
@@ -199,6 +203,7 @@ vi /etc/fstab
 #add the following line
 server.local:/srv/nfs   /nfsshare   nfs    user,noauto    0   0
 ```
+mount -a 
 
 Open /nfsshare in Nautilus File Explorer 
 
@@ -283,6 +288,7 @@ host    all             all             10.244.0.0/16           password
 Restart the database process.
 
 ```shell
+exit
 systemctl restart postgresql-11
 ```
 
@@ -306,8 +312,6 @@ DROP DATABASE "SharedServices";
 \q
 ```
 
-
-
 ## Set up Samba Server
 
 NFS shares often do not map properly from Windows. Set up a Samba server to expose the same shares through the SMB protocol.
@@ -321,7 +325,7 @@ systemctl enable nmb.service
 ```
 
 ```shell
-sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.org
+mv /etc/samba/smb.conf /etc/samba/smb.conf.org
 cat <<EOF > /etc/samba/smb.conf
 [smbshare]
 path = /nfsshare
@@ -343,10 +347,6 @@ useradd viyademo01
 smbpasswd -a viyademo01
 # Password: lnxsas
 smbpasswd -e viyademo01
-
-smbpasswd -a martin
-# Password: lnxsas
-smbpasswd -e martin
 ```
 Open Nautilus File Explorer and open smbshare using User viyademo01.
 
