@@ -50,9 +50,12 @@ dnf check-update
 dnf install code
 
 # exit to normal user
-# Start Visual Studio Code with the "code" command
+git config --global user.name "Martin Schütz"
+git config --global user.email "martin@schuetzens.de"
+# Start Visual Studio 
+code
 # Mark code as a favorite
-# su root again
+su
 
 
 yum install epel-release -y
