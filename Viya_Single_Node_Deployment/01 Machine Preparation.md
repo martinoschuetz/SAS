@@ -31,6 +31,21 @@ su
 # vi /etc/hosts
 192.168.100.199  dach-viya4-k8s
 ```
+## Add Visual Studio Code as Editor for Coding and these scripts first
+```yum install git
+rpm --import https://packages.microsoft.com/keys/microsoft.asc sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+dnf check-update
+dnf install code
+
+# exit to normal user
+git config --global user.name "Martin Schütz"
+git config --global user.email "martin@schuetzens.de"
+# Start Visual Studio 
+code
+# Mark code as a favorite
+su
+´´´
+
 ## System Update
 
 ```shell
@@ -43,21 +58,6 @@ vi /etc/cloud/cloud.cfg
 
 #timedatectl set-timezone UTC
 
-# Add Visual Studio Code as Editor for Coding and these scripts first
-yum install git
-rpm --import https://packages.microsoft.com/keys/microsoft.asc sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
-dnf check-update
-dnf install code
-
-# exit to normal user
-git config --global user.name "Martin Schütz"
-git config --global user.email "martin@schuetzens.de"
-# Start Visual Studio 
-code
-# Mark code as a favorite
-su
-
-
 yum install epel-release -y
 yum install -y mlocate vim ufw wget git socat htop jq nfs-utils conntrack zip unzip htop tmux mailx at
 updatedb
@@ -65,7 +65,6 @@ systemctl enable --now atd.service
 
 sudo yum update -y
 ```
-
 
 ### Disable SELinux
 
@@ -75,12 +74,10 @@ sudo setenforce 0
 sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 ```
 
-
-
 ## Add Docker (19.03)
 
 ```shell
-yum install yum-utils
+yum install -y yum-utils
 
 yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
@@ -109,25 +106,17 @@ EOF
 systemctl restart docker
 ```
 
-
-
 ## Set up virtual NIC to ensure stable IP address
 
 ```shell
 
-
 #To make this interface you'd first need to make sure that #you have the dummy kernel module loaded. You can do this #like so:
 
 modprobe dummy
-
 ip link add dummy0 type dummy
 ip link set name eth10 dev dummy0
-
 ip addr add 192.168.100.199/24 brd + dev eth10
-
-
 ifconfig eth10 up
-
 # check
 ifconfig eth10
 
@@ -154,7 +143,6 @@ modprobe dummy
 ip link add dummy0 type dummy
 ip link set name eth10 dev dummy0
 ip addr add 192.168.100.199/24 brd + dev eth10
-
 ifconfig eth10 up
 EOF
 
