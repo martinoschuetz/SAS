@@ -43,6 +43,18 @@ vi /etc/cloud/cloud.cfg
 
 #timedatectl set-timezone UTC
 
+# Add Visual Studio Code as Editor for Coding and these scripts first
+yum install git
+rpm --import https://packages.microsoft.com/keys/microsoft.asc sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+dnf check-update
+dnf install code
+
+# exit to normal user
+# Start Visual Studio Code with the "code" command
+# Mark code as a favorite
+# su root again
+
+
 yum install epel-release -y
 yum install -y mlocate vim ufw wget git socat htop jq nfs-utils conntrack zip unzip htop tmux mailx at
 updatedb
