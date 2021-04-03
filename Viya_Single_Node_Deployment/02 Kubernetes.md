@@ -2,8 +2,6 @@
 
 # Kubernetes infrastructure
 
-
-
 ## Kubernetes install
 
 ```shell
@@ -40,24 +38,44 @@ systemctl stop firewalld
 #firewall-cmd --zone public --list-all
 #firewall-cmd --get-active-zones
 
-#firewall-cmd --zone=public --add-port=6443/tcp --permanent --zone=docker
-#firewall-cmd --zone=public --add-port=10250/tcp --permanent --zone=docker
-#systemctl restart firewalld
-#sudo firewall-cmd --reload
 
 #https://www.tecmint.com/open-port-for-specific-ip-address-in-firewalld/
-#firewall-cmd --new-zone=kubectl_access --permanent
- #firewall-cmd --reload
- #firewall-cmd --get-zones
- #firewall-cmd --zone=kubectl_access --add-source=192.168.100.199/24 --permanent
- #firewall-cmd --zone=kubectl_access --add-port=6443/tcp --permanent
- #firewall-cmd --zone=kubectl_access --add-port=10250/tcp --permanent
- #firewall-cmd --reload
- #firewall-cmd --zone=mariadb-access --list-all 
- #kubectl get nodes
+firewall-cmd --new-zone=kubectl_access --permanent
+firewall-cmd --reload
+firewall-cmd --get-zones
 
-swapoff -a
-kubeadm init --apiserver-advertise-address=192.168.100.199 --pod-network-cidr=10.244.0.0/16
+firewall-cmd --zone=kubectl_access --add-source=192.168.100.199/24 --permanent
+#firewall-cmd --zone=kubectl_access --add-port=6443/tcp --permanent
+#firewall-cmd --zone=kubectl_access --add-port=10250/tcp --permanent
+#firewall-cmd --zone=internal --add-port=10248/tcp --permanent
+#firewall-cmd --zone=public --add-port=5432/tcp --permanent
+firewall-cmd --add-port=6443/tcp --permanent
+firewall-cmd --add-port=10250/tcp --permanent
+firewall-cmd --add-port=10248/tcp --permanent
+firewall-cmd --add-port=5432/tcp --permanent
+firewall-cmd --reload
+firewall-cmd --zone=kubectl_access --list-all
+# Not sure whether this is necessary
+systemctl restart firewalld
+
+# kubernetes requires "swapoff -a"
+# Activating "swapon -a" two times crashed cenots
+# Use "fail-swap-on=false" work with swap on.
+# Parameter documentation (https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)
+# Recommended version via config file (https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/)
+# First try with depreceated version (https://github.com/kubernetes/kubeadm/issues/610)  
+
+systemctl stop firewalld
+kubeadm reset 
+echo 'Environment="KUBELET_EXTRA_ARGS=--fail-swap-on=false"' >> /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+systemctl daemon-reload
+systemctl restart kubelet
+
+# Paramter "--ignore-preflight-errors Swap" required
+kubeadm init --ignore-preflight-errors Swap --apiserver-advertise-address=192.168.100.199 --pod-network-cidr=10.244.0.0/16
+
+#kubectl get nodes
 
 # increase number of pods
 vi /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
