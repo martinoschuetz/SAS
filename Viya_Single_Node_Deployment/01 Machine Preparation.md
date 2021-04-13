@@ -47,6 +47,9 @@ git config --global user.email "martin@schuetzens.de"
 su
 ```
 
+# Install VPN
+# https://www.digitalocean.com/community/tutorials/how-to-set-up-and-configure-an-openvpn-server-on-centos-8-de
+
 ## System Update
 
 ```shell
