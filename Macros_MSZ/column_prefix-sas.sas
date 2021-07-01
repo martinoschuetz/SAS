@@ -31,11 +31,11 @@ run;
 		%let pair = %sysfunc(catx(=,&name.,%quote(&prefix.)_&name.));
 		%let pair2 = %sysfunc(catx(=,&name.,"%quote(&prefix.)_&lab."));
 		%let rename_statement=&rename_statement. &pair.;
-		%put &=rename_statement.;
 		%let relabel_statement=&relabel_statement. &pair2.;
-		%put &=relabel_statement.;
 	%end;
 
+	%put &=rename_statement.;
+	%put &=relabel_statement.;
 	proc datasets lib=&lib. nolist;
 		modify &dsin.;
 		label   %quote(&relabel_statement.);
