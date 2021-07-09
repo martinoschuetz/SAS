@@ -18,7 +18,7 @@ run;
 
 	proc sql noprint;
 		select name into :names separated by '|' from _out_;
-		select label into :labels separated by '|' from _out_;
+		select compress(label,',;') into :labels separated by '|' from _out_;
 	quit;
 
 	%let N=&sqlobs.;
