@@ -14,9 +14,9 @@ options mprint mlogic;
 	num_drop_list:		Name of table which hold list of dropped numeric variables
 	drop_vars:			List of variables of input table which should be excluded from analysis
 */
-%macro drop_const_cols( dsin=, dsout=, content_table=,
-						class_meas=, class_drop_list=, 
-						num_meas=, num_drop_list=,
+%macro drop_const_cols( dsin=, dsout=, content_table=content,
+						class_meas=c_meas, class_drop_list=c_drop, 
+						num_meas=n_meas, num_drop_list=n_drop,
 						drop_vars=);
 
 	proc contents data=&dsin. out=&content_table. nodetails short noprint; run;
